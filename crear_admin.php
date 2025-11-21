@@ -1,5 +1,6 @@
 <?php
-require_once 'conexion.php';
+/** @var PDO $pdo */
+require_once __DIR__ . '/conexion.php';
 
 // Datos del administrador
 $nombre  = 'Admin Principal';
@@ -7,29 +8,35 @@ $email   = 'admin@vet.local';
 $usuario = 'admin';
 $pass    = 'AdminSegura@2025';
 
-// 1️⃣ Verificar si el usuario ya existe
-$stmt = $con->prepare("SELECT id FROM usuarios WHERE usuario = ?");
-$stmt->bind_param("s", $usuario);
-$stmt->execute();
-$stmt->store_result();
+try {
 
-if ($stmt->num_rows > 0) {
-    die("El usuario administrador '{$usuario}' ya existe.");
-}
+    // 1️⃣ Verificar si el usuario ya existe
+    $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE usuario = :usuario");
+    $stmt->execute(['usuario' => $usuario]);
 
-// 2️⃣ Hashear la contraseña
-$hash = password_hash($pass, PASSWORD_DEFAULT);
+    if ($stmt->fetch()) {
+        die("El usuario administrador '{$usuario}' ya existe.");
+    }
 
-// 3️⃣ Insertar usuario ADMIN
-$stmt = $con->prepare(
-    "INSERT INTO usuarios (nombre, email, usuario, password_hash, rol, activo) 
-     VALUES (?, ?, ?, ?, 'ADMIN', 1)"
-);
-$stmt->bind_param("ssss", $nombre, $email, $usuario, $hash);
+    // 2️⃣ Hashear la contraseña
+    $hash = password_hash($pass, PASSWORD_DEFAULT);
 
-if ($stmt->execute()) {
+    // 3️⃣ Insertar usuario ADMIN
+    $stmt = $pdo->prepare(
+        "INSERT INTO usuarios (nombre, email, usuario, password_hash, rol, activo)
+         VALUES (:nombre, :email, :usuario, :hash, 'ADMIN', 1)"
+    );
+
+    $stmt->execute([
+        'nombre'  => $nombre,
+        'email'   => $email,
+        'usuario' => $usuario,
+        'hash'    => $hash,
+    ]);
+
     echo "✅ Administrador creado correctamente.<br>Usuario: <strong>{$usuario}</strong><br>Clave: <strong>{$pass}</strong>";
-} else {
-    echo "❌ Error al crear administrador: " . htmlspecialchars($stmt->error);
+
+} catch (PDOException $e) {
+    echo "❌ Error al crear administrador: " . htmlspecialchars($e->getMessage());
 }
 
