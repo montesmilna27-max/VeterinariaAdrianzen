@@ -1,10 +1,12 @@
 <?php
+/** @var PDO $pdo */
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/conexion.php';
 
 require_role(['ADMIN','RECEPCION','VET']);
 
 try {
+
     $sql = "
         SELECT ct.id,
                ct.fecha_hora,
@@ -20,8 +22,9 @@ try {
         ORDER BY ct.fecha_hora DESC
     ";
 
-    $stmt = $conn->query($sql);
-    $citas = $stmt->fetchAll(); // PDO::FETCH_ASSOC por defecto
+    $stmt = $pdo->query($sql);
+    /** @var array<int, array<string, mixed>> $citas */
+    $citas = $stmt ? $stmt->fetchAll() : [];
 
 } catch (PDOException $e) {
     die('Error al obtener las citas.');
