@@ -1,30 +1,33 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
 require_role(['ADMIN', 'RECEPCION']);
-
-require_once __DIR__ . '/conexion.php';
+require_once __DIR__ . '/conexion.php'; // PDO
 
 $busqueda = trim($_GET['q'] ?? '');
 
-if ($busqueda !== '') {
-    $like = "%{$busqueda}%";
-    $stmt = $con->prepare(
-        "SELECT id, nombre, telefono, email, direccion, creado_en
-         FROM clientes
-         WHERE nombre LIKE ? OR telefono LIKE ? OR email LIKE ?
-         ORDER BY creado_en DESC"
-    );
-    $stmt->bind_param("sss", $like, $like, $like);
-} else {
-    $stmt = $con->prepare(
-        "SELECT id, nombre, telefono, email, direccion, creado_en
-         FROM clientes
-         ORDER BY creado_en DESC"
-    );
-}
+try {
+    if ($busqueda !== '') {
+        $like = "%{$busqueda}%";
+        $stmt = $pdo->prepare(
+            "SELECT id, nombre, telefono, email, direccion, creado_en
+             FROM clientes
+             WHERE nombre LIKE :like OR telefono LIKE :like OR email LIKE :like
+             ORDER BY creado_en DESC"
+        );
+        $stmt->execute(['like' => $like]);
+    } else {
+        $stmt = $pdo->query(
+            "SELECT id, nombre, telefono, email, direccion, creado_en
+             FROM clientes
+             ORDER BY creado_en DESC"
+        );
+    }
 
-$stmt->execute();
-$result = $stmt->get_result();
+    $clientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+} catch (PDOException $e) {
+    die('Error al obtener clientes.');
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -54,7 +57,7 @@ $result = $stmt->get_result();
 <header>
     <div>
         <strong>VetCitas</strong>
-        <span style="font-size:.9em;opacity:.8;">[<?php echo htmlspecialchars($_SESSION['user_rol']); ?>]</span>
+        <span style="font-size:.9em;opacity:.8;">[<?php echo htmlspecialchars($_SESSION['user_role']); ?>]</span>
     </div>
     <div>
         <?php echo htmlspecialchars($_SESSION['user_name']); ?>
@@ -88,8 +91,8 @@ $result = $stmt->get_result();
         </tr>
         </thead>
         <tbody>
-        <?php if ($result && $result->num_rows > 0): ?>
-            <?php while ($row = $result->fetch_assoc()): ?>
+        <?php if (!empty($clientes)): ?>
+            <?php foreach ($clientes as $row): ?>
                 <tr>
                     <td><?php echo (int)$row['id']; ?></td>
                     <td><?php echo htmlspecialchars($row['nombre']); ?></td>
@@ -98,7 +101,7 @@ $result = $stmt->get_result();
                     <td><?php echo htmlspecialchars($row['direccion']); ?></td>
                     <td><?php echo htmlspecialchars($row['creado_en']); ?></td>
                 </tr>
-            <?php endwhile; ?>
+            <?php endforeach; ?>
         <?php else: ?>
             <tr><td colspan="6">No hay clientes registrados.</td></tr>
         <?php endif; ?>
