@@ -4,15 +4,11 @@ require_once __DIR__ . '/includes/auth.php';
 require_role(['ADMIN','RECEPCION']);
 require_once __DIR__ . '/conexion.php';
 
-// Bloquear acceso directo
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: citas_list.php");
     exit;
 }
 
-// --------------------
-// Sanitización
-// --------------------
 $cliente_id = (int)($_POST['cliente_id'] ?? 0);
 $mascota_id = (int)($_POST['mascota_id'] ?? 0);
 $vet_id     = (int)($_POST['vet_id'] ?? 0);
@@ -23,75 +19,51 @@ $creada_por = (int)($_SESSION['user_id'] ?? 0);
 
 $errores = [];
 
-// --------------------
-// Validaciones
-// --------------------
-if ($cliente_id <= 0)  $errores[] = "Debe seleccionar un cliente.";
-if ($mascota_id <= 0)  $errores[] = "Debe seleccionar una mascota.";
-if ($vet_id <= 0)      $errores[] = "Debe seleccionar un veterinario.";
-if ($fecha === '' || $hora === '') $errores[] = "Debe indicar fecha y hora.";
-if ($motivo === '')    $errores[] = "Debe indicar el motivo de la cita.";
+if ($cliente_id <= 0) $errores[] = "Debe seleccionar un cliente.";
+if ($mascota_id <= 0) $errores[] = "Debe seleccionar una mascota.";
+if ($vet_id <= 0)     $errores[] = "Debe seleccionar un veterinario.";
+if ($fecha==='' || $hora==='') $errores[] = "Debe indicar fecha y hora.";
+if ($motivo==='') $errores[] = "Debe indicar el motivo.";
 
-$fecha_hora = $fecha . ' ' . $hora . ':00';
-
-// Validación de formato datetime
+$fecha_hora = $fecha.' '.$hora.':00';
 $dt = DateTime::createFromFormat('Y-m-d H:i:s', $fecha_hora);
-if (!$dt || $dt->format('Y-m-d H:i:s') !== $fecha_hora) {
+if (!$dt || $dt->format('Y-m-d H:i:s') !== $fecha_hora)
     $errores[] = "Fecha u hora no válidas.";
-}
 
-// --------------------
-// Validar disponibilidad del veterinario
-// --------------------
 if (empty($errores)) {
-    $sql = "
+    $stmt = $pdo->prepare("
         SELECT COUNT(*) AS total
         FROM citas
-        WHERE vet_id = :vet_id
-          AND fecha_hora = :fecha_hora
+        WHERE vet_id = :vet_id AND fecha_hora = :fh
           AND estado IN ('PENDIENTE','CONFIRMADA')
-    ";
+    ");
+    $stmt->execute(['vet_id'=>$vet_id,'fh'=>$fecha_hora]);
 
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([
-        'vet_id'     => $vet_id,
-        'fecha_hora' => $fecha_hora
-    ]);
-
+    /** @var array{total:int}|false $row */
     $row = $stmt->fetch();
+    $total = $row !== false ? (int)$row['total'] : 0;
 
-    if ($row && (int)$row['total'] > 0) {
-        $errores[] = "El veterinario ya tiene una cita en esa fecha y hora.";
-    }
+    if ($total > 0)
+        $errores[] = "El veterinario ya tiene cita en esa fecha y hora.";
 }
 
-// --------------------
-// Mostrar errores
-// --------------------
-if (!empty($errores)) {
-    echo "<h3>Errores al registrar la cita</h3>";
-    foreach ($errores as $e) {
-        echo htmlspecialchars($e) . "<br>";
-    }
-    echo '<br><a href="cita_nueva.php">Volver</a>';
+if ($errores) {
+    echo "<h3>Errores</h3>";
+    foreach($errores as $e) echo htmlspecialchars($e)."<br>";
+    echo '<a href="cita_nueva.php">Volver</a>';
     exit;
 }
 
-// --------------------
-// Insertar cita
-// --------------------
-$sql = "
+$stmt = $pdo->prepare("
     INSERT INTO citas (mascota_id, vet_id, fecha_hora, motivo, creada_por)
-    VALUES (:mascota_id, :vet_id, :fecha_hora, :motivo, :creada_por)
-";
-
-$stmt = $pdo->prepare($sql);
+    VALUES (:mascota_id, :vet_id, :fh, :motivo, :creada_por)
+");
 $stmt->execute([
-    'mascota_id' => $mascota_id,
-    'vet_id'     => $vet_id,
-    'fecha_hora' => $fecha_hora,
-    'motivo'     => $motivo,
-    'creada_por' => $creada_por
+    'mascota_id'=>$mascota_id,
+    'vet_id'=>$vet_id,
+    'fh'=>$fecha_hora,
+    'motivo'=>$motivo,
+    'creada_por'=>$creada_por
 ]);
 
 header("Location: citas_list.php");
