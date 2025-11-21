@@ -1,35 +1,34 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
 require_role(['ADMIN', 'RECEPCION']);
+require_once __DIR__ . '/conexion.php';
 
 /** @var PDO $pdo */
-require_once __DIR__ . '/conexion.php'; // Aquí se crea $pdo
 
 $busqueda = trim($_GET['q'] ?? '');
 
 try {
     if ($busqueda !== '') {
         $like = "%{$busqueda}%";
-
-        $stmt = $pdo->prepare(
-            "SELECT id, nombre, telefono, email, direccion, creado_en
-             FROM clientes
-             WHERE nombre LIKE :like OR telefono LIKE :like OR email LIKE :like
-             ORDER BY creado_en DESC"
-        );
-
+        $stmt = $pdo->prepare("
+            SELECT id, nombre, telefono, email, direccion, creado_en
+            FROM clientes
+            WHERE nombre LIKE :like 
+               OR telefono LIKE :like 
+               OR email LIKE :like
+            ORDER BY creado_en DESC
+        ");
         $stmt->execute(['like' => $like]);
-
     } else {
-
-        $stmt = $pdo->query(
-            "SELECT id, nombre, telefono, email, direccion, creado_en
-             FROM clientes
-             ORDER BY creado_en DESC"
-        );
+        $stmt = $pdo->query("
+            SELECT id, nombre, telefono, email, direccion, creado_en
+            FROM clientes
+            ORDER BY creado_en DESC
+        ");
     }
 
-    $clientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    /** @var array<int, array{id:int|string, nombre:string, telefono:string, email:string, direccion:string, creado_en:string}> $clientes */
+    $clientes = $stmt ? $stmt->fetchAll() : [];
 
 } catch (PDOException $e) {
     die('Error al obtener clientes.');
@@ -40,80 +39,37 @@ try {
 <head>
     <meta charset="UTF-8">
     <title>Clientes - VetCitas</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #fafafa; }
-        header {
-            background: #00796b; color: #fff; padding: 10px 20px;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        a { color: #fff; text-decoration: none; margin-left: 15px; }
-        main { padding: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
-        th, td { border: 1px solid #ddd; padding: 8px; font-size: 0.9em; }
-        th { background: #e0f2f1; text-align: left; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; }
-        .top-bar form { display: flex; gap: 5px; }
-        input[type=text] { padding: 5px; }
-        .btn { padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; }
-        .btn-primary { background: #00796b; color:#fff; }
-        .btn-secondary { background: #ccc; color:#000; }
-    </style>
 </head>
 <body>
-<header>
-    <div>
-        <strong>VetCitas</strong>
-        <span style="font-size:.9em;opacity:.8;">[<?php echo htmlspecialchars($_SESSION['user_role']); ?>]</span>
-    </div>
-    <div>
-        <?php echo htmlspecialchars($_SESSION['user_name']); ?>
-        <a href="dashboard.php">Inicio</a>
-        <a href="logout.php">Cerrar sesión</a>
-    </div>
-</header>
-<main>
-    <div class="top-bar">
-        <h1>Clientes</h1>
-        <div>
-            <form method="get" action="clientes_list.php">
-                <input type="text" name="q" placeholder="Buscar..." value="<?php echo htmlspecialchars($busqueda); ?>">
-                <button class="btn btn-secondary" type="submit">Buscar</button>
-            </form>
-        </div>
-        <div>
-            <a href="cliente_nuevo.php" class="btn btn-primary">+ Nuevo cliente</a>
-        </div>
-    </div>
+<h1>Clientes</h1>
 
-    <table>
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Teléfono</th>
-            <th>Email</th>
-            <th>Dirección</th>
-            <th>Creado</th>
-        </tr>
-        </thead>
-        <tbody>
-        <?php if (!empty($clientes)): ?>
-            <?php foreach ($clientes as $row): ?>
-                <tr>
-                    <td><?php echo (int)$row['id']; ?></td>
-                    <td><?php echo htmlspecialchars($row['nombre']); ?></td>
-                    <td><?php echo htmlspecialchars($row['telefono']); ?></td>
-                    <td><?php echo htmlspecialchars($row['email']); ?></td>
-                    <td><?php echo htmlspecialchars($row['direccion']); ?></td>
-                    <td><?php echo htmlspecialchars($row['creado_en']); ?></td>
-                </tr>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <tr><td colspan="6">No hay clientes registrados.</td></tr>
-        <?php endif; ?>
-        </tbody>
-    </table>
-</main>
+<form method="get">
+    <input type="text" name="q" value="<?= htmlspecialchars($busqueda) ?>">
+    <button>Buscar</button>
+</form>
+
+<table>
+    <tr>
+        <th>ID</th><th>Nombre</th><th>Teléfono</th><th>Email</th><th>Dirección</th><th>Creado</th>
+    </tr>
+
+    <?php if ($clientes): ?>
+        <?php foreach ($clientes as $row): ?>
+            <?php /** @var array{id:int|string} $row */ ?>
+            <tr>
+                <td><?= (int)$row['id'] ?></td>
+                <td><?= htmlspecialchars((string)$row['nombre']) ?></td>
+                <td><?= htmlspecialchars((string)$row['telefono']) ?></td>
+                <td><?= htmlspecialchars((string)$row['email']) ?></td>
+                <td><?= htmlspecialchars((string)$row['direccion']) ?></td>
+                <td><?= htmlspecialchars((string)$row['creado_en']) ?></td>
+            </tr>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <tr><td colspan="6">No hay clientes registrados.</td></tr>
+    <?php endif; ?>
+</table>
 </body>
 </html>
+
 
