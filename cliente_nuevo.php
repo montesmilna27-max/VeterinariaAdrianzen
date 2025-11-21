@@ -2,7 +2,8 @@
 require_once __DIR__ . '/includes/auth.php';
 require_role(['ADMIN', 'RECEPCION']);
 
-require_once __DIR__ . '/conexion.php'; // PDO
+/** @var PDO $pdo */
+require_once __DIR__ . '/conexion.php'; // Aquí se crea $pdo
 
 $errores = [];
 $mensaje = '';
@@ -24,10 +25,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errores)) {
         try {
-            $stmt = $conn->prepare(
+
+            // Cambiado $conn → $pdo
+            $stmt = $pdo->prepare(
                 "INSERT INTO clientes (nombre, telefono, email, direccion)
                  VALUES (:nombre, :telefono, :email, :direccion)"
             );
+
             $stmt->execute([
                 'nombre'    => $nombre,
                 'telefono'  => $telefono,
@@ -36,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
 
             $mensaje = 'Cliente registrado correctamente.';
+
             // limpiar campos
             $nombre = $telefono = $email = $direccion = '';
 
