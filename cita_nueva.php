@@ -2,12 +2,19 @@
 require_once __DIR__ . '/includes/auth.php';
 require_role(['ADMIN','RECEPCION']);
 require_once __DIR__ . '/conexion.php';
-// cargar veterinarios activos
-$vets = $con->query("SELECT id, nombre FROM usuarios WHERE rol = 'VET' AND activo = 1 ORDER BY nombre");
-// Clientes
-$clientes = $con->query("SELECT id, nombre FROM clientes ORDER BY nombre");
-// Veterinarios
-$vets = $con->query("SELECT id, nombre FROM usuarios WHERE rol = 'VET'");
+
+try {
+    // Cargar veterinarios activos
+    $stmt = $conn->query("SELECT id, nombre FROM usuarios WHERE rol = 'VET' AND activo = 1 ORDER BY nombre");
+    $vets = $stmt->fetchAll();
+
+    // Clientes
+    $stmt = $conn->query("SELECT id, nombre FROM clientes ORDER BY nombre");
+    $clientes = $stmt->fetchAll();
+
+} catch (PDOException $e) {
+    die('Error al cargar datos.');
+}
 ?>
 <?php include __DIR__ . '/includes/header.php'; ?>
 
@@ -19,9 +26,9 @@ $vets = $con->query("SELECT id, nombre FROM usuarios WHERE rol = 'VET'");
         <label>Cliente:</label><br>
         <select name="cliente_id" id="cliente_id" required onchange="cargarMascotas(this.value)">
             <option value="">Seleccione...</option>
-            <?php while($c = $clientes->fetch_assoc()): ?>
+            <?php foreach($clientes as $c): ?>
                 <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['nombre']) ?></option>
-            <?php endwhile; ?>
+            <?php endforeach; ?>
         </select><br><br>
 
         <label>Mascota:</label><br>
@@ -32,9 +39,9 @@ $vets = $con->query("SELECT id, nombre FROM usuarios WHERE rol = 'VET'");
         <label>Veterinario:</label><br>
         <select name="vet_id" required>
             <option value="">Seleccione...</option>
-            <?php while($v = $vets->fetch_assoc()): ?>
+            <?php foreach($vets as $v): ?>
                 <option value="<?= $v['id'] ?>"><?= htmlspecialchars($v['nombre']) ?></option>
-            <?php endwhile; ?>
+            <?php endforeach; ?>
         </select><br><br>
 
         <label>Fecha:</label><br>
@@ -71,3 +78,4 @@ function cargarMascotas(cliente_id) {
         });
 }
 </script>
+
