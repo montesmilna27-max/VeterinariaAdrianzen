@@ -1,4 +1,4 @@
-<?php 
+<?php
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/conexion.php';
 
@@ -8,23 +8,17 @@ $userId   = $_SESSION['user_id']   ?? null;
 
 // Inicializar stats
 $stats = [
-    'total_clientes'      => 0,
-    'total_mascotas'      => 0,
-    'citas_hoy'           => 0,
-    'citas_pendientes'    => 0,
+    'total_clientes'   => 0,
+    'total_mascotas'   => 0,
+    'citas_hoy'        => 0,
+    'citas_pendientes' => 0,
 ];
 
 // --- Estadísticas para ADMIN ---
 if ($userRole === 'ADMIN') {
-
-    $stmt = $conn->query("SELECT COUNT(*) AS total FROM clientes");
-    $stats['total_clientes'] = (int)($stmt->fetch()['total'] ?? 0);
-
-    $stmt = $conn->query("SELECT COUNT(*) AS total FROM mascotas");
-    $stats['total_mascotas'] = (int)($stmt->fetch()['total'] ?? 0);
-
-    $stmt = $conn->query("SELECT COUNT(*) AS total FROM citas WHERE DATE(fecha_hora) = CURDATE()");
-    $stats['citas_hoy'] = (int)($stmt->fetch()['total'] ?? 0);
+    $stats['total_clientes'] = (int)($conn->query("SELECT COUNT(*) AS total FROM clientes")->fetch()['total'] ?? 0);
+    $stats['total_mascotas'] = (int)($conn->query("SELECT COUNT(*) AS total FROM mascotas")->fetch()['total'] ?? 0);
+    $stats['citas_hoy']      = (int)($conn->query("SELECT COUNT(*) AS total FROM citas WHERE DATE(fecha_hora) = CURDATE()")->fetch()['total'] ?? 0);
 
     $stmt = $conn->prepare("SELECT COUNT(*) AS total FROM citas WHERE estado = :estado");
     $stmt->execute(['estado' => 'PENDIENTE']);
@@ -35,23 +29,20 @@ if ($userRole === 'ADMIN') {
 
     $stmt = $conn->prepare(
         "SELECT COUNT(*) AS total
-           FROM citas
-          WHERE DATE(fecha_hora) = CURDATE()
-            AND vet_id = :vet_id"
+         FROM citas
+         WHERE DATE(fecha_hora) = CURDATE()
+           AND vet_id = :vet_id"
     );
     $stmt->execute(['vet_id' => $userId]);
     $stats['citas_hoy'] = (int)($stmt->fetch()['total'] ?? 0);
 
     $stmt = $conn->prepare(
         "SELECT COUNT(*) AS total
-           FROM citas
-          WHERE estado = :estado
-            AND vet_id = :vet_id"
+         FROM citas
+         WHERE estado = :estado
+           AND vet_id = :vet_id"
     );
-    $stmt->execute([
-        'estado' => 'PENDIENTE',
-        'vet_id' => $userId
-    ]);
+    $stmt->execute(['estado' => 'PENDIENTE', 'vet_id' => $userId]);
     $stats['citas_pendientes'] = (int)($stmt->fetch()['total'] ?? 0);
 }
 ?>
@@ -92,65 +83,50 @@ if ($userRole === 'ADMIN') {
         <a href="logout.php">Cerrar sesión</a>
     </div>
 </header>
-<main style="padding:20px;">
+<main>
     <h1>Bienvenido, <?php echo htmlspecialchars($userName); ?></h1>
 
     <div style="margin:20px 0;">
         <?php if ($userRole === 'ADMIN'): ?>
-            <a href="cliente_nuevo.php"
-               style="padding:8px 12px;background:#00796b;color:#fff;border-radius:4px;text-decoration:none;margin-right:10px;">
-                + Nuevo cliente
-            </a>
-            <a href="mascota_nueva.php"
-               style="padding:8px 12px;background:#00796b;color:#fff;border-radius:4px;text-decoration:none;margin-right:10px;">
-                + Nueva mascota
-            </a>
-            <a href="cita_nueva.php"
-               style="padding:8px 12px;background:#00796b;color:#fff;border-radius:4px;text-decoration:none;">
-                + Nueva cita
-            </a>
+            <a href="cliente_nuevo.php" style="padding:8px 12px;background:#00796b;color:#fff;border-radius:4px;text-decoration:none;margin-right:10px;">+ Nuevo cliente</a>
+            <a href="mascota_nueva.php" style="padding:8px 12px;background:#00796b;color:#fff;border-radius:4px;text-decoration:none;margin-right:10px;">+ Nueva mascota</a>
+            <a href="cita_nueva.php" style="padding:8px 12px;background:#00796b;color:#fff;border-radius:4px;text-decoration:none;">+ Nueva cita</a>
         <?php else: ?>
-            <a href="cita_nueva.php"
-               style="padding:8px 12px;background:#00796b;color:#fff;border-radius:4px;text-decoration:none;">
-                + Agendar nueva cita
-            </a>
+            <a href="cita_nueva.php" style="padding:8px 12px;background:#00796b;color:#fff;border-radius:4px;text-decoration:none;">+ Agendar nueva cita</a>
         <?php endif; ?>
     </div>
 
     <div style="display:flex;gap:20px;flex-wrap:wrap;">
         <?php if ($userRole === 'ADMIN'): ?>
             <a href="clientes_list.php" style="flex:1;min-width:200px;text-decoration:none;color:inherit;">
-                <div style="background:#fff;border-radius:6px;padding:15px;box-shadow:0 2px 4px rgba(0,0,0,.1);">
+                <div class="card">
                     <strong>Clientes registrados</strong>
-                    <div style="font-size:2em;margin-top:10px;"><?php echo $stats['total_clientes']; ?></div>
+                    <p><?php echo $stats['total_clientes']; ?></p>
                 </div>
             </a>
 
             <a href="mascotas_list.php" style="flex:1;min-width:200px;text-decoration:none;color:inherit;">
-                <div style="background:#fff;border-radius:6px;padding:15px;box-shadow:0 2px 4px rgba(0,0,0,.1);">
+                <div class="card">
                     <strong>Mascotas registradas</strong>
-                    <div style="font-size:2em;margin-top:10px;"><?php echo $stats['total_mascotas']; ?></div>
+                    <p><?php echo $stats['total_mascotas']; ?></p>
                 </div>
             </a>
         <?php endif; ?>
 
         <a href="citas_list.php?filtro=hoy" style="flex:1;min-width:200px;text-decoration:none;color:inherit;">
-            <div style="background:#fff;border-radius:6px;padding:15px;box-shadow:0 2px 4px rgba(0,0,0,.1);">
+            <div class="card">
                 <strong>Citas de hoy</strong>
-                <div style="font-size:2em;margin-top:10px;"><?php echo $stats['citas_hoy']; ?></div>
+                <p><?php echo $stats['citas_hoy']; ?></p>
             </div>
         </a>
 
         <a href="citas_list.php?filtro=pendientes" style="flex:1;min-width:200px;text-decoration:none;color:inherit;">
-            <div style="background:#fff;border-radius:6px;padding:15px;box-shadow:0 2px 4px rgba(0,0,0,.1);">
+            <div class="card">
                 <strong>Citas pendientes</strong>
-                <div style="font-size:2em;margin-top:10px;"><?php echo $stats['citas_pendientes']; ?></div>
+                <p><?php echo $stats['citas_pendientes']; ?></p>
             </div>
         </a>
     </div>
 </main>
-
 </body>
 </html>
-
-
