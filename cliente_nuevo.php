@@ -2,7 +2,7 @@
 require_once __DIR__ . '/includes/auth.php';
 require_role(['ADMIN', 'RECEPCION']);
 
-require_once __DIR__ . '/conexion.php';
+require_once __DIR__ . '/conexion.php'; // PDO
 
 $errores = [];
 $mensaje = '';
@@ -23,17 +23,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errores)) {
-        $stmt = $con->prepare(
-            "INSERT INTO clientes (nombre, telefono, email, direccion)
-             VALUES (?, ?, ?, ?)"
-        );
-        $stmt->bind_param("ssss", $nombre, $telefono, $email, $direccion);
+        try {
+            $stmt = $conn->prepare(
+                "INSERT INTO clientes (nombre, telefono, email, direccion)
+                 VALUES (:nombre, :telefono, :email, :direccion)"
+            );
+            $stmt->execute([
+                'nombre'    => $nombre,
+                'telefono'  => $telefono,
+                'email'     => $email,
+                'direccion' => $direccion,
+            ]);
 
-        if ($stmt->execute()) {
             $mensaje = 'Cliente registrado correctamente.';
             // limpiar campos
             $nombre = $telefono = $email = $direccion = '';
-        } else {
+
+        } catch (PDOException $e) {
             $errores[] = 'Error al guardar el cliente.';
         }
     }
@@ -54,10 +60,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         main { padding: 20px; }
         form { max-width: 500px; background:#fff; padding:15px; border-radius:8px; box-shadow:0 0 4px rgba(0,0,0,.1); }
         label { display:block; margin-top:10px; }
-        input[type=text], input[type=email] {
+        input[type=text], input[type=email], textarea {
             width:100%; padding:8px; margin-top:5px; box-sizing:border-box;
         }
-        textarea { width:100%; padding:8px; margin-top:5px; box-sizing:border-box; }
         button { margin-top:15px; padding:8px 15px; border:none; border-radius:4px; background:#00796b; color:#fff; cursor:pointer; }
         .alert-error { color:#c62828; margin-top:10px; }
         .alert-ok { color:#2e7d32; margin-top:10px; }
@@ -67,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <header>
     <div>
         <strong>VetCitas</strong>
-        <span style="font-size:.9em;opacity:.8;">[<?php echo htmlspecialchars($_SESSION['user_rol']); ?>]</span>
+        <span style="font-size:.9em;opacity:.8;">[<?php echo htmlspecialchars($_SESSION['user_role']); ?>]</span>
     </div>
     <div>
         <?php echo htmlspecialchars($_SESSION['user_name']); ?>
@@ -112,3 +117,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </main>
 </body>
 </html>
+
