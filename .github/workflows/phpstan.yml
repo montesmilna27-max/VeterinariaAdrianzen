@@ -25,4 +25,4 @@ jobs:
           sudo mv phpstan.phar /usr/local/bin/phpstan
 
       - name: Run PHPStan analysis
-        run: phpstan analyse ./ --level=max
+        run: phpstan analyse ./ --level=max 
