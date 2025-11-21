@@ -1,21 +1,27 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
 require_role(['ADMIN', 'RECEPCION']);
-require_once __DIR__ . '/conexion.php'; // PDO
+
+/** @var PDO $pdo */
+require_once __DIR__ . '/conexion.php'; // Aquí se crea $pdo
 
 $busqueda = trim($_GET['q'] ?? '');
 
 try {
     if ($busqueda !== '') {
         $like = "%{$busqueda}%";
+
         $stmt = $pdo->prepare(
             "SELECT id, nombre, telefono, email, direccion, creado_en
              FROM clientes
              WHERE nombre LIKE :like OR telefono LIKE :like OR email LIKE :like
              ORDER BY creado_en DESC"
         );
+
         $stmt->execute(['like' => $like]);
+
     } else {
+
         $stmt = $pdo->query(
             "SELECT id, nombre, telefono, email, direccion, creado_en
              FROM clientes
