@@ -32,3 +32,4 @@ if ($stmt->execute()) {
 } else {
     echo "❌ Error al crear administrador: " . htmlspecialchars($stmt->error);
 }
+
