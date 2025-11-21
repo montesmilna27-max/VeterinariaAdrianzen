@@ -4,22 +4,29 @@ require_once __DIR__ . '/conexion.php';
 
 require_role(['ADMIN','RECEPCION','VET']);
 
-$sql = "
-SELECT ct.id,
-       ct.fecha_hora,
-       ct.estado,
-       ct.motivo,
-       m.nombre   AS mascota,
-       c.nombre   AS cliente,
-       u.nombre   AS vet
-FROM citas ct
-JOIN mascotas m ON ct.mascota_id = m.id
-JOIN clientes c ON m.cliente_id = c.id
-JOIN usuarios u ON ct.vet_id = u.id
-ORDER BY ct.fecha_hora DESC
-";
+try {
+    $sql = "
+        SELECT ct.id,
+               ct.fecha_hora,
+               ct.estado,
+               ct.motivo,
+               m.nombre   AS mascota,
+               c.nombre   AS cliente,
+               u.nombre   AS vet
+        FROM citas ct
+        JOIN mascotas m ON ct.mascota_id = m.id
+        JOIN clientes c ON m.cliente_id = c.id
+        JOIN usuarios u ON ct.vet_id = u.id
+        ORDER BY ct.fecha_hora DESC
+    ";
 
-$result = $con->query($sql);
+    $stmt = $conn->query($sql);
+    $citas = $stmt->fetchAll(); // PDO::FETCH_ASSOC por defecto
+
+} catch (PDOException $e) {
+    die('Error al obtener las citas.');
+}
+
 ?>
 <?php include __DIR__ . '/includes/header.php'; ?>
 
@@ -45,22 +52,27 @@ $result = $con->query($sql);
             <th>Estado</th>
         </tr>
 
-        <?php while($row = $result->fetch_assoc()): ?>
-            <?php
+        <?php if (!empty($citas)): ?>
+            <?php foreach($citas as $row): 
                 $fh = strtotime($row['fecha_hora']);
                 $fecha = date('Y-m-d', $fh);
-                $hora  = date('H:i',   $fh);
+                $hora  = date('H:i', $fh);
             ?>
+                <tr>
+                    <td><?= (int)$row['id'] ?></td>
+                    <td><?= $fecha ?></td>
+                    <td><?= $hora ?></td>
+                    <td><?= htmlspecialchars($row['cliente']) ?></td>
+                    <td><?= htmlspecialchars($row['mascota']) ?></td>
+                    <td><?= htmlspecialchars($row['vet']) ?></td>
+                    <td><?= htmlspecialchars($row['motivo']) ?></td>
+                    <td><?= htmlspecialchars($row['estado']) ?></td>
+                </tr>
+            <?php endforeach; ?>
+        <?php else: ?>
             <tr>
-                <td><?= (int)$row['id'] ?></td>
-                <td><?= $fecha ?></td>
-                <td><?= $hora ?></td>
-                <td><?= htmlspecialchars($row['cliente']) ?></td>
-                <td><?= htmlspecialchars($row['mascota']) ?></td>
-                <td><?= htmlspecialchars($row['vet']) ?></td>
-                <td><?= htmlspecialchars($row['motivo']) ?></td>
-                <td><?= htmlspecialchars($row['estado']) ?></td>
+                <td colspan="8">No hay citas registradas.</td>
             </tr>
-        <?php endwhile; ?>
+        <?php endif; ?>
     </table>
 </main>
