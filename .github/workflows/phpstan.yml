@@ -10,12 +10,19 @@ jobs:
   phpstan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.1'
-      - name: Install dependencies
-        run: composer install
-      - name: Run PHPStan
-        run: vendor/bin/phpstan analyse src --level=max
+
+      - name: Install PHPStan globally
+        run: |
+          curl -LsS https://github.com/phpstan/phpstan/releases/download/1.10.23/phpstan.phar -o phpstan.phar
+          chmod +x phpstan.phar
+          sudo mv phpstan.phar /usr/local/bin/phpstan
+
+      - name: Run PHPStan analysis
+        run: phpstan analyse ./ --level=max
